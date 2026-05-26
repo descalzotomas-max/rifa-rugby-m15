@@ -120,7 +120,7 @@ const CONFIG = {
   bankName:       "Mercado Pago",
   organizerPhone: "5491158138795",
   organizerName:  "Simón",
-  sheetsUrl:      "https://script.google.com/macros/s/AKfycbxAtC_LTg6_vZ3v9yYoYp80ax073DlRQMQ5a7H_PVR_wJEeeAc1HgxGdX0jcIvZkkpFrA/exec",
+  sheetsUrl:      "https://script.google.com/macros/s/AKfycbwTXKXmXix0dI1avq66EqeKeD9bL164yn0vTTlysO5AWZ3X4XMH1WTwHAtavhJSzCbsPA/exec",
   soldNumbers:    [],  // números realmente vendidos — agregá acá cuando confirmes pagos
 };
 </script>
@@ -234,9 +234,33 @@ function getDisplayAvailable(){
   return Math.max(10,CONFIG.totalNumbers-Math.max(realSold,fictSold));
 }
 
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded", async ()=>{
+  // Mostrar grilla con los datos locales primero (rápido)
   buildGrid(); updateStats();
+  // Luego consultar Sheets para marcar los vendidos reales
+  await syncSoldFromSheets();
 });
+
+async function syncSoldFromSheets(){
+  if(!CONFIG.sheetsUrl) return;
+  try{
+    const url = CONFIG.sheetsUrl + "?action=getSold";
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.sold && Array.isArray(data.sold)){
+      // Marcar cada número vendido en Sheets
+      data.sold.forEach(num=>{
+        if(!CONFIG.soldNumbers.includes(num)) CONFIG.soldNumbers.push(num);
+        const btn = document.querySelector(`[data-num="${num}"]`);
+        if(btn && !btn.classList.contains("sold")){
+          btn.classList.add("sold");
+          btn.onclick = null;
+        }
+      });
+      updateStats();
+    }
+  }catch(e){ console.log("Sync Sheets:", e); }
+}
 
 function buildGrid(){
   const grid=document.getElementById("numbersGrid"),saved=getSaved();
