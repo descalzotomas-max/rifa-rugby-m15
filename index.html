@@ -120,7 +120,7 @@ const CONFIG = {
   bankName:       "Mercado Pago",
   organizerPhone: "5491158138795",
   organizerName:  "Simón",
-  sheetsUrl:      "https://script.google.com/macros/s/AKfycbwTXKXmXix0dI1avq66EqeKeD9bL164yn0vTTlysO5AWZ3X4XMH1WTwHAtavhJSzCbsPA/exec",
+  sheetsUrl:      "https://script.google.com/macros/s/AKfycbyYRJ-ruWdmYPLiZiImiL6Upj8WtpYQTIgDs8tmCblZWWb22m_FF_LFdvs0ucnygLg_bw/exec",
   soldNumbers:    [],  // números realmente vendidos — agregá acá cuando confirmes pagos
 };
 </script>
@@ -243,23 +243,32 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 
 async function syncSoldFromSheets(){
   if(!CONFIG.sheetsUrl) return;
-  try{
-    const url = CONFIG.sheetsUrl + "?action=getSold";
-    const res = await fetch(url);
-    const data = await res.json();
-    if(data.sold && Array.isArray(data.sold)){
-      // Marcar cada número vendido en Sheets
-      data.sold.forEach(num=>{
-        if(!CONFIG.soldNumbers.includes(num)) CONFIG.soldNumbers.push(num);
-        const btn = document.querySelector(`[data-num="${num}"]`);
-        if(btn && !btn.classList.contains("sold")){
-          btn.classList.add("sold");
-          btn.onclick = null;
+  return new Promise((resolve)=>{
+    const callbackName = "rifaCallback_" + Date.now();
+    window[callbackName] = function(data){
+      try{
+        if(data.sold && Array.isArray(data.sold)){
+          data.sold.forEach(num=>{
+            if(!CONFIG.soldNumbers.includes(num)) CONFIG.soldNumbers.push(num);
+            const btn = document.querySelector(`[data-num="${num}"]`);
+            if(btn && !btn.classList.contains("sold")){
+              btn.classList.add("sold");
+              btn.onclick = null;
+            }
+          });
+          updateStats();
         }
-      });
-      updateStats();
-    }
-  }catch(e){ console.log("Sync Sheets:", e); }
+      }catch(e){}
+      document.getElementById("jsonpScript")&&document.getElementById("jsonpScript").remove();
+      delete window[callbackName];
+      resolve();
+    };
+    const script = document.createElement("script");
+    script.id = "jsonpScript";
+    script.src = CONFIG.sheetsUrl + "?action=getSold&callback=" + callbackName;
+    script.onerror = ()=>resolve();
+    document.head.appendChild(script);
+  });
 }
 
 function buildGrid(){
