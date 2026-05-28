@@ -178,7 +178,7 @@ const CONFIG = {
     </div>
     <div class="form-group" style="margin-top:12px"><label class="form-label">WhatsApp *</label><input class="form-input" type="tel" id="inputWA" placeholder="11 1234-5678" autocomplete="tel"></div>
     <div class="price-row"><span class="price-label">Total a pagar</span><span class="price-val">$5.200</span></div>
-    <p class="pay-title">¿Cómo querés pagar?</p>
+    <p class="pay-title">Método de pago</p>
     <div class="pay-methods">
       <label class="pay-option" id="optMP" onclick="choosePay('mp')">
         <input type="radio" name="pay" value="mp">
@@ -186,16 +186,7 @@ const CONFIG = {
         <div class="pay-info"><div class="pay-name">Mercado Pago</div><div class="pay-desc">Tarjeta, billetera o transferencia MP</div></div>
         <div class="pay-check"></div>
       </label>
-      <label class="pay-option" id="optTra" onclick="choosePay('tra')">
-        <div class="pay-icon tra">🏦</div>
-        <div class="pay-info"><div class="pay-name">Transferencia bancaria</div><div class="pay-desc">CBU / CVU / Alias</div></div>
-        <div class="pay-check"></div>
-      </label>
-      <label class="pay-option" id="optEf" onclick="choosePay('ef')">
-        <div class="pay-icon ef">💵</div>
-        <div class="pay-info"><div class="pay-name">Efectivo</div><div class="pay-desc">Coordinamos por WhatsApp con Simón</div></div>
-        <div class="pay-check"></div>
-      </label>
+
     </div>
     <div class="detail-panel" id="detailPanel"></div>
     <button class="confirm-btn" id="confirmBtn" onclick="confirmPurchase()" disabled>Confirmar reserva</button>
@@ -302,6 +293,8 @@ function openModal(){
   document.getElementById("modalOverlay").classList.add("open");
   document.body.style.overflow="hidden";
   resetModal();
+  // Auto-seleccionar MP
+  choosePay('mp');
 }
 function closeModal(){document.getElementById("modalOverlay").classList.remove("open");document.body.style.overflow=""}
 function handleOverlayClick(e){if(e.target===document.getElementById("modalOverlay"))closeModal()}
@@ -314,26 +307,18 @@ function resetModal(){
   document.getElementById("inputNombre").value="";
   document.getElementById("inputApellido").value="";
   document.getElementById("inputWA").value="";
-  ["optMP","optTra","optEf"].forEach(id=>document.getElementById(id).classList.remove("chosen"));
+  document.getElementById("optMP").classList.remove("chosen");
   chosenPay=null;
 }
 
-const PAY_LABELS={mp:"Mercado Pago",tra:"Transferencia bancaria",ef:"Efectivo"};
+const PAY_LABELS={mp:"Mercado Pago"};
 
 function choosePay(method){
   chosenPay=method;
-  ["optMP","optTra","optEf"].forEach(id=>document.getElementById(id).classList.remove("chosen"));
-  const panel=document.getElementById("detailPanel"),num=selectedNum;
-  if(method==="mp"){
-    document.getElementById("optMP").classList.add("chosen");
-    panel.innerHTML=`<strong>Pasos:</strong><br>1. Hacé clic en <strong>Confirmar reserva</strong>.<br>2. Se abre la pantalla de pago de Mercado Pago.<br>3. Pagá <strong>$5.200</strong> y tu número queda confirmado. ✅`;
-  }else if(method==="tra"){
-    document.getElementById("optTra").classList.add("chosen");
-    panel.innerHTML=`<strong>Datos para transferir:</strong><br>🏦 ${CONFIG.bankName}<br>CBU/CVU: <strong>${CONFIG.cbu}</strong><br>Alias: <strong>${CONFIG.alias}</strong><br>Importe: <strong>$5.200</strong><br><br>Enviá el comprobante por <a href="https://wa.me/5491158138795?text=${encodeURIComponent("Hola Simón! Te mando comprobante. Número "+num)}" target="_blank">WhatsApp a Simón</a>. 📲`;
-  }else{
-    document.getElementById("optEf").classList.add("chosen");
-    panel.innerHTML=`Coordiná con Simón por <a href="https://wa.me/5491158138795?text=${encodeURIComponent("Hola Simón! Quiero pagar en efectivo el número "+num)}" target="_blank">WhatsApp</a>. 💬<br>Tu número queda reservado 24hs.`;
-  }
+  document.getElementById("optMP").classList.remove("chosen");
+  const panel=document.getElementById("detailPanel");
+  document.getElementById("optMP").classList.add("chosen");
+  panel.innerHTML=`Hacé clic en <strong>Confirmar reserva</strong> y se abre la pantalla de pago de Mercado Pago. Pagá <strong>$5.200</strong> y tu número queda confirmado. ✅`;
   panel.classList.add("show");
   document.getElementById("confirmBtn").disabled=false;
 }
