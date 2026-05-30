@@ -321,6 +321,7 @@ function openModal(){
   document.body.style.overflow="hidden";
   resetModal();
   chosenPay="mp";
+  document.getElementById("optMP").classList.add("chosen");
 }
 function closeModal(){document.getElementById("modalOverlay").classList.remove("open");document.body.style.overflow=""}
 function handleOverlayClick(e){if(e.target===document.getElementById("modalOverlay"))closeModal()}
@@ -329,7 +330,7 @@ function resetModal(){
   document.getElementById("successState").classList.remove("show");
   document.getElementById("detailPanel").classList.remove("show");
   document.getElementById("detailPanel").innerHTML="";
-  document.getElementById("confirmBtn").disabled=true;
+  document.getElementById("confirmBtn").disabled=false;
   document.getElementById("inputNombre").value="";
   document.getElementById("inputApellido").value="";
   document.getElementById("inputWA").value="";
@@ -400,18 +401,16 @@ async function confirmPurchase(){
       }).catch(()=>{});
     });
   }
-}
 
   // Mostrar pantalla de éxito
   document.getElementById("formState").style.display="none";
   document.getElementById("successState").classList.add("show");
-  const numText = nums.length === 1 ? "número " + nums[0] : "números " + nums.join(", ");
+  const numText2 = nums.length === 1 ? "número " + nums[0] : "números " + nums.join(", ");
   document.getElementById("successNumBadge").innerHTML = nums.map(n=>`<span style="margin:0 4px">${n}</span>`).join('·');
   document.getElementById("thanksBox").innerHTML=`
     <div class="thanks-name">¡Gracias, ${nombre}! 🎁</div>
-    Reservaste los <strong>${numText}</strong> correctamente.<br>
-    Total pagado: <strong style="color:var(--c-accent)">$${total}</strong><br>
-    Si resultás ganador/a te contactamos por WhatsApp.<br>
+    Reservaste los <strong>${numText2}</strong> correctamente.<br>
+    Total: <strong style="color:var(--c-accent)">$${monto}</strong><br>
     ¡Mucha suerte en el sorteo! 🍀🏉
   `;
   document.getElementById("actionBtns").innerHTML=`
@@ -419,6 +418,7 @@ async function confirmPurchase(){
     <a class="action-btn mp-btn" href="${mpLink}" target="_blank"><img src="${MP_IMG}" alt="Pagar con Mercado Pago"></a>
   `;
 }
+
 </script>
 </body>
 </html>
