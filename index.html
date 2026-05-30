@@ -121,7 +121,7 @@ const CONFIG = {
   },
   organizerPhone: "5491158138795",
   organizerName:  "Simón",
-  sheetsUrl:      "https://script.google.com/macros/s/AKfycbxT8Sc2IsM7kqzwEhC3gAgDd5lA4nFH_8SBM_CKdG5WM8dXmKbFjAaqlmCRpOZfiCjlhA/exec",
+  sheetsUrl:      "https://script.google.com/macros/s/AKfycbyPTVmlljddFPUCAEaZXQh5zxONBf1BFhWDuOSBRhrPsWxNTlx63Stvh1qxc72bBUcung/exec",
   soldNumbers:    [],
 };
 </script>
@@ -360,7 +360,7 @@ async function confirmPurchase(){
   const mpLink = getMpLink(qty);
   const total = getTotal(qty);
 
-  // Marcar todos los números como vendidos
+  // Marcar todos los números como vendidos localmente
   nums.forEach(num=>{
     saveNum(num,{nombre,apellido,wa,method:"mp",ts});
     const btn=document.querySelector(`[data-num="${num}"]`);
@@ -370,17 +370,24 @@ async function confirmPurchase(){
   document.getElementById("floatingCta").classList.remove("visible");
   updateStats();
 
-  // Enviar cada número al Sheets con monto y etiqueta
+  // PASO 1: Guardar en Sheets SIN método ni monto (reserva sin pago confirmado)
   if(CONFIG.sheetsUrl){
-    const metodo = `Mercado Pago - ${qty} número${qty > 1 ? 's' : ''}`;
-    const monto = `$${getTotal(qty)}`;
     for(const num of nums){
-      try{await fetch(CONFIG.sheetsUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:num,nombre,apellido,whatsapp:wa,metodo,monto,fecha:ts})})}catch(e){}
+      try{await fetch(CONFIG.sheetsUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:num,nombre,apellido,whatsapp:wa,metodo:"",monto:"",fecha:ts})})}catch(e){}
     }
   }
 
-  // Redirigir a MP según cantidad
-  window.open(mpLink, "_blank");
+  // PASO 2: Abrir MP
+  const mpOpened = window.open(mpLink, "_blank");
+
+  // PASO 3: Si MP se abrió OK, actualizar Sheets con método y monto
+  if(mpOpened && CONFIG.sheetsUrl){
+    const metodo = `Mercado Pago - ${qty} número${qty > 1 ? 's' : ''}`;
+    const monto = `$${getTotal(qty)}`;
+    for(const num of nums){
+      try{await fetch(CONFIG.sheetsUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:num,nombre,apellido,whatsapp:wa,metodo,monto,fecha:ts,actualizar:true})})}catch(e){}
+    }
+  }
 
   // Mostrar pantalla de éxito
   document.getElementById("formState").style.display="none";
