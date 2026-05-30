@@ -108,20 +108,21 @@ footer a{color:var(--c-accent);text-decoration:none}
 <body>
 <script>
 const CONFIG = {
-  prizes:         ["Alfombra","Silla Gamer","Juego de Mate del Tero"],
   totalNumbers:   250,
   ticketPrice:    5200,
+  maxPerPurchase: 3,
   drawDate:       "30 de julio de 2026",
   urgencyPerDay:  12,
   launchDate:     "2026-05-26",
-  mpLink:         "https://mpago.la/1TRSvxJ",
-  cbu:            "TU_CBU_O_CVU",
-  alias:          "TU.ALIAS.MP",
-  bankName:       "Mercado Pago",
+  mpLinks: {
+    1: "https://mpago.la/1TRSvxJ",
+    2: "https://mpago.la/2tWfryB",
+    3: "https://mpago.la/2jQSaBr",
+  },
   organizerPhone: "5491158138795",
   organizerName:  "Simón",
-  sheetsUrl:      "https://script.google.com/macros/s/AKfycbyYRJ-ruWdmYPLiZiImiL6Upj8WtpYQTIgDs8tmCblZWWb22m_FF_LFdvs0ucnygLg_bw/exec",
-  soldNumbers:    [],  // números realmente vendidos — agregá acá cuando confirmes pagos
+  sheetsUrl:      "https://script.google.com/macros/s/AKfycbxT8Sc2IsM7kqzwEhC3gAgDd5lA4nFH_8SBM_CKdG5WM8dXmKbFjAaqlmCRpOZfiCjlhA/exec",
+  soldNumbers:    [],
 };
 </script>
 
@@ -147,7 +148,7 @@ const CONFIG = {
 
 
 <section class="grid-section">
-  <p class="grid-title">Elegí tu número</p>
+  <p class="grid-title">Elegí hasta 3 números — tocá para seleccionar</p>
   <div class="numbers-grid" id="numbersGrid"></div>
   <div class="legend">
     <div class="legend-item"><div class="legend-dot free"></div>Disponible</div>
@@ -157,7 +158,7 @@ const CONFIG = {
 </section>
 
 <div class="floating-cta" id="floatingCta">
-  <span class="cta-text">Número</span>
+  <span class="cta-text" id="ctaLabel">Número</span>
   <span class="cta-num" id="ctaNum">—</span>
   <button class="cta-btn" onclick="openModal()">Reservar →</button>
 </div>
@@ -166,18 +167,16 @@ const CONFIG = {
 <div class="modal">
   <div id="formState">
     <div class="modal-header">
-      <div><div class="modal-title">Reservar número</div><div style="font-size:12px;color:var(--c-muted);margin-top:3px">Completá tus datos</div></div>
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <div style="text-align:right"><div style="font-size:10px;color:var(--c-muted);text-transform:uppercase;letter-spacing:1px">Nro.</div><div class="modal-num" id="modalNum">—</div></div>
-        <button class="close-btn" onclick="closeModal()">✕</button>
-      </div>
+      <div><div class="modal-title" id="modalTitle">Reservar número</div><div style="font-size:12px;color:var(--c-muted);margin-top:3px">Completá tus datos</div></div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="modalNumBadges"></div>
     <div class="form-row">
       <div class="form-group" style="margin-bottom:0"><label class="form-label">Nombre *</label><input class="form-input" type="text" id="inputNombre" placeholder="Juan" autocomplete="given-name"></div>
       <div class="form-group" style="margin-bottom:0"><label class="form-label">Apellido *</label><input class="form-input" type="text" id="inputApellido" placeholder="García" autocomplete="family-name"></div>
     </div>
     <div class="form-group" style="margin-top:12px"><label class="form-label">WhatsApp *</label><input class="form-input" type="tel" id="inputWA" placeholder="11 1234-5678" autocomplete="tel"></div>
-    <div class="price-row"><span class="price-label">Total a pagar</span><span class="price-val">$5.200</span></div>
+    <div class="price-row"><span class="price-label">Total a pagar</span><span class="price-val" id="modalPrice">$5.200</span></div>
     <p class="pay-title">Método de pago</p>
     <div class="pay-methods">
       <label class="pay-option" id="optMP" onclick="choosePay('mp')">
@@ -213,7 +212,10 @@ const CONFIG = {
 </footer>
 <script>
 const MP_IMG = document.querySelector('#optMP .pay-icon img').src;
-let selectedNum=null, chosenPay=null;
+let selectedNums=[], chosenPay=null;  // selectedNums = array de hasta 3 números
+
+function getMpLink(qty){ return CONFIG.mpLinks[qty] || CONFIG.mpLinks[1]; }
+function getTotal(qty){ return (CONFIG.ticketPrice * qty).toLocaleString('es-AR'); }
 const LS_KEY="rifam15_v2";
 function getSaved(){try{return JSON.parse(localStorage.getItem(LS_KEY)||"{}")}catch{return{}}}
 function saveNum(num,data){const d=getSaved();d[num]=data;localStorage.setItem(LS_KEY,JSON.stringify(d))}
@@ -274,11 +276,29 @@ function buildGrid(){
 }
 
 function selectNumber(num){
-  if(selectedNum!==null){const p=document.querySelector(`[data-num="${selectedNum}"]`);if(p)p.classList.remove("selected")}
-  selectedNum=num;
-  document.querySelector(`[data-num="${num}"]`).classList.add("selected");
-  document.getElementById("ctaNum").textContent=num;
-  document.getElementById("floatingCta").classList.add("visible");
+  const btn = document.querySelector(`[data-num="${num}"]`);
+  const idx = selectedNums.indexOf(num);
+  if(idx > -1){
+    // Deseleccionar
+    selectedNums.splice(idx, 1);
+    btn.classList.remove("selected");
+  } else {
+    if(selectedNums.length >= CONFIG.maxPerPurchase){
+      alert("Podés elegir hasta " + CONFIG.maxPerPurchase + " números por compra.");
+      return;
+    }
+    selectedNums.push(num);
+    btn.classList.add("selected");
+  }
+  // Actualizar floating CTA
+  if(selectedNums.length === 0){
+    document.getElementById("floatingCta").classList.remove("visible");
+  } else {
+    const label = selectedNums.length === 1 ? "Número" : "Números";
+    document.getElementById("ctaLabel").textContent = label;
+    document.getElementById("ctaNum").textContent = selectedNums.join(", ");
+    document.getElementById("floatingCta").classList.add("visible");
+  }
 }
 
 function updateStats(){
@@ -288,12 +308,20 @@ function updateStats(){
 }
 
 function openModal(){
-  if(!selectedNum)return;
-  document.getElementById("modalNum").textContent=selectedNum;
+  if(selectedNums.length === 0)return;
+  // Actualizar modal header
+  const qty = selectedNums.length;
+  document.getElementById("modalTitle").textContent = qty === 1 ? "Reservar número" : "Reservar " + qty + " números";
+  // Mostrar badges de números
+  const badges = document.getElementById("modalNumBadges");
+  badges.innerHTML = selectedNums.map(n =>
+    `<span style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--c-accent);background:var(--c-card);border:2px solid var(--c-accent);border-radius:10px;padding:4px 16px;">${n}</span>`
+  ).join('');
+  // Actualizar precio
+  document.getElementById("modalPrice").textContent = "$" + getTotal(qty);
   document.getElementById("modalOverlay").classList.add("open");
   document.body.style.overflow="hidden";
   resetModal();
-  // Auto-seleccionar MP
   choosePay('mp');
 }
 function closeModal(){document.getElementById("modalOverlay").classList.remove("open");document.body.style.overflow=""}
@@ -316,9 +344,11 @@ const PAY_LABELS={mp:"Mercado Pago"};
 function choosePay(method){
   chosenPay=method;
   document.getElementById("optMP").classList.remove("chosen");
-  const panel=document.getElementById("detailPanel");
   document.getElementById("optMP").classList.add("chosen");
-  panel.innerHTML=`Hacé clic en <strong>Confirmar reserva</strong> y se abre la pantalla de pago de Mercado Pago. Pagá <strong>$5.200</strong> y tu número queda confirmado. ✅`;
+  const qty = selectedNums.length;
+  const total = getTotal(qty);
+  const panel=document.getElementById("detailPanel");
+  panel.innerHTML=`Hacé clic en <strong>Confirmar reserva</strong> y se abre la pantalla de pago de Mercado Pago. Pagá <strong>$${total}</strong> y tus números quedan confirmados. ✅`;
   panel.classList.add("show");
   document.getElementById("confirmBtn").disabled=false;
 }
@@ -328,42 +358,48 @@ async function confirmPurchase(){
   const apellido=document.getElementById("inputApellido").value.trim();
   const wa=document.getElementById("inputWA").value.trim();
   if(!nombre||!apellido||!wa){alert("Por favor completá nombre, apellido y WhatsApp.");return}
-  const num=selectedNum,ts=new Date().toLocaleString("es-AR");
-  saveNum(num,{nombre,apellido,wa,method:chosenPay,ts});
-  const btn=document.querySelector(`[data-num="${num}"]`);
-  if(btn){btn.classList.remove("selected");btn.classList.add("sold");btn.onclick=null}
-  selectedNum=null;
+  const nums=[...selectedNums], qty=nums.length, ts=new Date().toLocaleString("es-AR");
+  const mpLink = getMpLink(qty);
+  const total = getTotal(qty);
+
+  // Marcar todos los números como vendidos
+  nums.forEach(num=>{
+    saveNum(num,{nombre,apellido,wa,method:"mp",ts});
+    const btn=document.querySelector(`[data-num="${num}"]`);
+    if(btn){btn.classList.remove("selected");btn.classList.add("sold");btn.onclick=null}
+  });
+  selectedNums=[];
   document.getElementById("floatingCta").classList.remove("visible");
   updateStats();
 
+  // Enviar cada número al Sheets con monto y etiqueta
   if(CONFIG.sheetsUrl){
-    try{await fetch(CONFIG.sheetsUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:num,nombre,apellido,whatsapp:wa,metodo:PAY_LABELS[chosenPay],fecha:ts})})}catch(e){}
+    const metodo = `Mercado Pago - ${qty} número${qty > 1 ? 's' : ''}`;
+    const monto = `$${getTotal(qty)}`;
+    for(const num of nums){
+      try{await fetch(CONFIG.sheetsUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({numero:num,nombre,apellido,whatsapp:wa,metodo,monto,fecha:ts})})}catch(e){}
+    }
   }
 
-  // ✅ REDIRECCIÓN INMEDIATA A MP al confirmar
-  if(chosenPay==="mp"){
-    window.open(CONFIG.mpLink, "_blank");
-  }
+  // Redirigir a MP según cantidad
+  window.open(mpLink, "_blank");
 
+  // Mostrar pantalla de éxito
   document.getElementById("formState").style.display="none";
   document.getElementById("successState").classList.add("show");
-  document.getElementById("successNumBadge").textContent=num;
+  const numText = nums.length === 1 ? "número " + nums[0] : "números " + nums.join(", ");
+  document.getElementById("successNumBadge").innerHTML = nums.map(n=>`<span style="margin:0 4px">${n}</span>`).join('·');
   document.getElementById("thanksBox").innerHTML=`
     <div class="thanks-name">¡Gracias, ${nombre}! 🎁</div>
-    Reservaste el <strong>número ${num}</strong> correctamente.<br>
+    Reservaste los <strong>${numText}</strong> correctamente.<br>
+    Total pagado: <strong style="color:var(--c-accent)">$${total}</strong><br>
     Si resultás ganador/a te contactamos por WhatsApp.<br>
     ¡Mucha suerte en el sorteo! 🍀🏉
   `;
-
-  const actEl=document.getElementById("actionBtns");
-  if(chosenPay==="mp"){
-    actEl.innerHTML=`<p style="font-size:13px;color:var(--c-muted);margin-bottom:10px">¿No se abrió la pantalla de pago? Hacé clic acá:</p><a class="action-btn mp-btn" href="${CONFIG.mpLink}" target="_blank"><img src="${MP_IMG}" alt="Pagar con Mercado Pago"></a>`;
-  }else if(chosenPay==="tra"){
-    actEl.innerHTML=`<div style="background:var(--c-card);border-radius:10px;padding:14px;font-size:13px;line-height:1.8;text-align:left">🏦 <strong>${CONFIG.bankName}</strong><br>Alias: <strong style="color:var(--c-accent)">${CONFIG.alias}</strong><br>CBU: <strong style="color:var(--c-accent)">${CONFIG.cbu}</strong><br>Monto: <strong style="color:#6ee7b7">$5.200</strong></div>
-    <a class="action-btn wa-btn" href="https://wa.me/5491158138795?text=${encodeURIComponent("Hola Simón! Te mando comprobante. Número "+num+", "+nombre+" "+apellido+".")}" target="_blank" style="margin-top:10px">📲 Enviar comprobante a Simón</a>`;
-  }else{
-    actEl.innerHTML=`<a class="action-btn wa-btn" href="https://wa.me/5491158138795?text=${encodeURIComponent("Hola Simón! Reservé el número "+num+". Me llamo "+nombre+" "+apellido+" y quiero pagar en efectivo.")}" target="_blank">💬 Coordinar con Simón por WhatsApp</a>`;
-  }
+  document.getElementById("actionBtns").innerHTML=`
+    <p style="font-size:13px;color:var(--c-muted);margin-bottom:10px">¿No se abrió la pantalla de pago? Hacé clic acá:</p>
+    <a class="action-btn mp-btn" href="${mpLink}" target="_blank"><img src="${MP_IMG}" alt="Pagar con Mercado Pago"></a>
+  `;
 }
 </script>
 </body>
