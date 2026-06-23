@@ -84,6 +84,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   background:linear-gradient(145deg,#4a3d00,#2e2600);
   border:3px solid var(--accent);color:var(--accent);
 }
+.ldot{display:block;width:10px;height:10px;border-radius:50%}
+.ldot-avail{background:#e8e4f8}
+.ldot-sold{background:#1e1c35}
+.ldot-sel{background:var(--accent)}
 
 /* ── GRID ── */
 .grid-wrap{padding:0 12px 120px}
@@ -346,15 +350,15 @@ const CONFIG = {
 <!-- LEGEND -->
 <div class="legend-bar">
   <div class="legend-item">
-    <div class="legend-swatch avail">7</div>
+    <div class="legend-swatch avail"><span class="ldot ldot-avail"></span></div>
     <span>Disponible</span>
   </div>
   <div class="legend-item">
-    <div class="legend-swatch sold">7</div>
+    <div class="legend-swatch sold"><span class="ldot ldot-sold"></span></div>
     <span>Vendido</span>
   </div>
   <div class="legend-item">
-    <div class="legend-swatch sel">7</div>
+    <div class="legend-swatch sel"><span class="ldot ldot-sel"></span></div>
     <span>Elegido</span>
   </div>
 </div>
