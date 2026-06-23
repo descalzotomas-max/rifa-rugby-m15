@@ -459,6 +459,11 @@ async function syncSheets(){
           }
         });
         updateStats();
+        // Scroll al primer número disponible
+        const firstAvail = document.querySelector('.num:not(.sold)');
+        if(firstAvail){
+          firstAvail.scrollIntoView({behavior:'smooth', block:'center'});
+        }
       }
       try{document.getElementById("jsonpS").remove()}catch{}
       delete window[cb];
